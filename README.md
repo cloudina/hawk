@@ -15,6 +15,7 @@ This is an antivirus scanning API based on CLAMAV and YARA.
 -   [TODO] Auto Update YARA rules
 -   [TODO] Support Yextend
 -   [TODO] Improve Logging using logrus [https://github.com/antonfisher/nested-logrus-formatter]
+-   [TODO] Hader Image
 
 ## API
 Available API are
@@ -86,6 +87,12 @@ docker exec -it (whatever your container name is e.g. hawk) /bin/ash
 For building
 ```bash
 docker build -t (whatever your image name is e.g. hawk) .
+```
+
+## Prebuild Image
+```bash
+docker pull cloudina/hawk
+
 ```
 
 ## Acknowledgements
