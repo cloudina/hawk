@@ -2,7 +2,7 @@
 # HAWK
 
 ## Introduction
-This is an antivirus scanning API based on CLAMAV and YARA.
+This is an antivirus scanning API based on CLAMAV and YARA for AWS S3, AZURE Blob Storage, GCP Cloud Storage.
 
 ## Features
 -   Microservice for scanning stream with YARA and CLAMAV
@@ -10,12 +10,13 @@ This is an antivirus scanning API based on CLAMAV and YARA.
 -   Moves Clean S3 Objects to another S3 Bucket
 -   Quarantines Infected S3 Objects to another S3 Bucket
 -   CLAMAV DB auto is updated to latest
--   Security Headers
+-   [TODO] AZURE and GCP support
 -   [TODO] Meger Various YARA rules to one set
 -   [TODO] Auto Update YARA rules
 -   [TODO] Support Yextend
 -   [TODO] Improve Logging using logrus [https://github.com/antonfisher/nested-logrus-formatter]
--   [TODO] Hader Image
+-   [TODO] Harden Image
+
 
 ## API
 Available API are
