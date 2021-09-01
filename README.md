@@ -1,0 +1,99 @@
+
+# HAWK
+
+## Introduction
+This is an antivirus scanning API based on CLAMAV and YARA.
+
+## Features
+-   Microservice for scanning stream with YARA and CLAMAV
+-   Scans S3 Bucket Object
+-   Moves Clean S3 Objects to another S3 Bucket
+-   Quarantines Infected S3 Objects to another S3 Bucket
+-   CLAMAV DB auto is updated to latest
+-   Security Headers
+-   [TODO] Meger Various YARA rules to one set
+-   [TODO] Auto Update YARA rules
+-   [TODO] Support Yextend
+-   [TODO] Improve Logging using logrus [https://github.com/antonfisher/nested-logrus-formatter]
+
+## API
+Available API are
+```
+POST /scanstream - scan stream
+
+POST -d '{"bucketname": $S3_BUCKET "key": $S3_OBJECT }' /s3/scanfile - scan s3 file
+
+GET /ruleset/ - list all loaded ruleset
+
+GET /ruleset/{ruleset} - list all rules from a loaded rule
+
+GET /metrics - get metrics
+GET /health - get health info 
+GET / - get index
+
+```
+
+## Installation
+
+Automated builds of the image are available on [Registry](https://hub.docker.com/r/cloudina/hawk) and is the recommended method of installation.
+
+```bash
+docker pull hub.docker.com/cloudina/hawk:(imagetag)
+```
+
+The following image tags are available:
+* `latest` - Most recent release of ClamAV with REST API
+
+# Quick Start
+
+Run hawk docker image:
+```bash
+docker run -p 9000:9999 -itd --name hawk cloudina/hawk
+```
+
+Test that service detects common test virus signature:
+
+**HTTP**
+```bash
+$  curl --data "@./test/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
+
+{"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}%                                   
+
+$  curl --data "@./test/eicar" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+
+{"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}                           
+
+$ curl --data "@./test/hello.txt" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+
+{"filename":"stream","matches":[],"status":"CLEAN"} 
+
+                                                                                         
+```
+## Networking
+
+| Port | Description |
+|-----------|-------------|
+| `3310`    | ClamD Listening Port |
+| `9999`    | HAWK Container Port |
+
+## Debug
+For debugging the running container
+```bash
+docker exec -it (whatever your container name is e.g. hawk) /bin/ash
+```
+
+## Build
+For building
+```bash
+docker build -t (whatever your image name is e.g. hawk) .
+```
+
+## Acknowledgements
+
+* [yarascanner](https://github.com/jheise/yarascanner)
+* [clamscanner](https://github.com/ifad/clammit)
+
+## References
+
+* https://www.clamav.net
+* https://virustotal.github.io/yara/
