@@ -11,7 +11,7 @@ Multi Cloud antivirus scanning API based on CLAMAV and YARA for AWS S3, AZURE Bl
 -   Quarantines Infected S3 Objects to another S3 Bucket
 -   CLAMAV DB auto is updated to latest
 -   [TODO] AZURE and GCP support
--   [TODO] Meger Various YARA rules to one set
+-   [TODO] Merge Various YARA rules to one set
 -   [TODO] Auto Update YARA rules
 -   [TODO] Support Yextend
 -   [TODO] Improve Logging using logrus [https://github.com/antonfisher/nested-logrus-formatter]
