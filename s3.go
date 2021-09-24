@@ -105,7 +105,7 @@ func readFile(bucket string, item string) ([] byte, error) {
 	return buff.Bytes(), nil
 }
 
-func copyFile(bucket string, item string, other string) (error){
+func copyFile(bucket string, item string, other string, object_acl string) (error){
 
 	awsSession, _ := session.NewSession(&aws.Config{
 		Region: aws.String(getRegion())},
@@ -116,9 +116,13 @@ func copyFile(bucket string, item string, other string) (error){
 
 	source := bucket + "/" + item
 
+	if (object_acl == "") {
+		object_acl = "private"
+	}
+
 	// Copy the file
 	_, err := svc.CopyObject(&s3.CopyObjectInput{Bucket: aws.String(other),
-	CopySource: aws.String(url.PathEscape(source)), Key: aws.String(item)})
+	CopySource: aws.String(url.PathEscape(source)), Key: aws.String(item),  ACL: aws.String(object_acl)})
 
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " Unable to read file " +item+ " from bucket "+bucket+ " to bucket "+other+" error : " + err.Error())

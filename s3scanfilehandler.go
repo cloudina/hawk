@@ -169,7 +169,7 @@ func S3ScanFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else  {
 		if response.data.Status == "INFECTED" {
-			err = copyFile(data.BucketName, data.Key, getQurantineFilesBucket(data.QurantineFilesBucket))
+			err = copyFile(data.BucketName, data.Key, getQurantineFilesBucket(data.QurantineFilesBucket), "private")
 			if err != nil {
 				elog.Println(err)
 				errorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -182,7 +182,7 @@ func S3ScanFileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else if response.data.Status == "CLEAN" {
-			err = copyFile(data.BucketName, data.Key, getCleanFilesBucket(data.CleanFilesBucket))
+			err = copyFile(data.BucketName, data.Key, getCleanFilesBucket(data.CleanFilesBucket), data.ACL)
 			if err != nil {
 				elog.Println(err)
 				errorResponse(w, err.Error(), http.StatusInternalServerError)

@@ -5,6 +5,7 @@ type ScanS3Object struct {
 	Key string `json:"key"`
 	CleanFilesBucket string `json:"clean_files_bucket,omitempty"`
 	QurantineFilesBucket string `json:"qurantine_files_bucket,omitempty"`
+	ACL string `json:"object_acl,omitempty"`
 }
 
 type HealthCheckRequest struct {
