@@ -2,7 +2,7 @@
 # HAWK
 
 ## Introduction
-This is an antivirus scanning API based on CLAMAV and YARA for AWS S3, AZURE Blob Storage, GCP Cloud Storage.
+Multi Cloud antivirus scanning API based on CLAMAV and YARA for AWS S3, AZURE Blob Storage, GCP Cloud Storage.
 
 ## Features
 -   Microservice for scanning stream with YARA and CLAMAV
