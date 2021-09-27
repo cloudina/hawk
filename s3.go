@@ -58,6 +58,7 @@ func keyExists(bucket string, key string) (bool, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {            
 			case "NotFound": // s3.ErrCodeNoSuchKey does not work, aws is missing this error code so we hardwire a string
+				elog.Println( time.Now().Format(time.RFC3339) + " keyExists got NotFound error for " +key+ " bucket "+bucket + " error : " + err.Error())
 				return false, nil
 			default:
 				elog.Println( time.Now().Format(time.RFC3339) + " keyExists failed for " +key+ " bucket "+bucket + " error : " + err.Error())
@@ -118,7 +119,7 @@ func copyFile(bucket string, item string, other string) (error){
 
 	// Copy the file
 	_, err := svc.CopyObject(&s3.CopyObjectInput{Bucket: aws.String(other),
-	CopySource: aws.String(url.PathEscape(source)), Key: aws.String(item)})
+	CopySource: aws.String(url.PathEscape(source)), Key: aws.String(item),  ACL: aws.String("bucket-owner-full-control")})
 
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " Unable to read file " +item+ " from bucket "+bucket+ " to bucket "+other+" error : " + err.Error())
@@ -132,7 +133,7 @@ func copyFile(bucket string, item string, other string) (error){
 		return errors.New("Error while  waiting for file to copy")
 	}
 
-	info.Println( time.Now().Format(time.RFC3339) + " File "+ item+ "successfully copied from bucket "+bucket+ " to bucket "+other)
+	info.Println( time.Now().Format(time.RFC3339) + " File "+ item+ " successfully copied from bucket "+bucket+ " to bucket "+other)
 
 	return nil
 }
