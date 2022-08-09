@@ -1,8 +1,8 @@
-FROM golang:1.16.7-alpine AS builder
+FROM golang:1.19-alpine3.16 AS builder
 
 RUN apk update upgrade;
 
-ENV YARA 4.1.1
+ENV YARA 4.2.3
 
 # Install Yara
 RUN apk --update add --no-cache openssl file bison jansson ca-certificates
@@ -45,27 +45,29 @@ RUN go build -o /go/bin/hawk
 
 RUN git clone https://github.com/Yara-Rules/rules.git /rules
 
-FROM alpine:latest
+FROM alpine:3.16
 
 # Update
-RUN apk update upgrade;
+RUN apk update upgrade
 
 # Install git
-RUN apk add git
-
-RUN apk add --no-cache libc6-compat
+RUN apk --update add --no-cache  \
+    git \
+    libc6-compat \
+    tzdata
 
 # Set timezone to Europe/Zurich
-RUN apk add tzdata
 RUN ln -s /usr/share/zoneinfo/Europe/London /etc/localtime
 
 # Install ClamAV
-RUN apk --no-cache add clamav clamav-libunrar \
+RUN apk --update add --no-cache clamav clamav-libunrar \
     && mkdir /run/clamav \
     && chown clamav:clamav /run/clamav \
     && chown -R clamav:clamav /var/lib/clamav/
 
-RUN apk add jansson libmagic
+RUN apk --update add --no-cache  \
+    jansson \
+    libmagic
 
 COPY config/clamd.conf /etc/clamav/clamd.conf
 COPY config/freshclam.conf /etc/clamav/freshclam.conf
@@ -87,7 +89,8 @@ ENV INDEXES -i /rules/malware_index.yar
 
 ENV NO_OF_CHECKS_FOR_DB_UPDATE=24
 
-RUN addgroup -S hawkgroup && adduser -S -H -G hawkgroup hawkuser 
+RUN addgroup --gid 10001 --system hawkgroup \
+ && adduser  --uid 10000 --system --ingroup hawkgroup --home /home/hawkuser hawkuser
 
 RUN chmod -R +r /rules
 RUN chown -R  hawkuser:hawkgroup /usr/bin/hawk
@@ -101,6 +104,10 @@ RUN chown -R  hawkuser:hawkgroup /var/log/clamav/
 RUN chown -R  hawkuser:hawkgroup /run/clamav/
 RUN chown -R  hawkuser:hawkgroup /var/lib/clamav/
 
-USER hawkuser
+RUN apk add --no-cache tini
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT ["/sbin/tini", "--", "entrypoint.sh"]
+
+RUN apk add --no-cache bind-tools
+
+USER hawkuser
