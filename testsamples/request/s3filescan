@@ -1,4 +1,6 @@
 {
-	"bucketname": "cloudina-s3-virus-scan-test",
-	"key": "eicar"
+	"bucketname": "cloudina-s3-virus-scaning-stage-bucket",
+	"key": "eicar",
+	"clean_files_bucket" : "cloudina-s3-virus-scaning-clean-bucket",
+	"qurantine_files_bucket" : "cloudina-s3-virus-scaning-qurantine-bucket"
 }

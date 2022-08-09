@@ -57,7 +57,7 @@ Test that service detects common test virus signature:
 
 **HTTP**
 ```bash
-$  curl --data "@./testsamples/scanfiles/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
+$  curl --data "@./testsamples/request/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
 
 {"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}%                                   
 
