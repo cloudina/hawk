@@ -57,15 +57,15 @@ Test that service detects common test virus signature:
 
 **HTTP**
 ```bash
-$  curl --data "@./test/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
+$  curl --data "@./testsamples/scanfiles/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
 
 {"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}%                                   
 
-$  curl --data "@./test/eicar" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+$  curl --data "@./testsamples/scanfiles/eicar" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
 
 {"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}                           
 
-$ curl --data "@./test/hello.txt" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+$ curl --data "@./testsamples/scanfiles/hello.txt" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
 
 {"filename":"stream","matches":[],"status":"CLEAN"} 
 
