@@ -42,17 +42,22 @@ func (self *Scanner) scanstream(data []byte) (*ScanResponse) {
 	scanResponse.data = yaraScannerResponse
 	scanResponse.err = yaraerr
 	
+	yaraRespJson, _ := json.Marshal(yaraScannerResponse)
+	info.Println( time.Now().Format(time.RFC3339) + " yarascan scan result " + string(yaraRespJson))
+
 	if (yaraerr == nil) && len(yaraScannerResponse.Matches) > 0 {
-		resp, _ := json.Marshal(yaraScannerResponse)
-		info.Println( time.Now().Format(time.RFC3339) + " Found matches with yara " + string(resp))
+		info.Println( time.Now().Format(time.RFC3339) + " Found matches with yara " + string(yaraRespJson))
 	}
 
 	info.Println("Running clamscan on addr: "+ clamdaddr)
 
 	clamScannerResponse,clamerr := ScanStream(&self.clamscanner, data)
+
+	clamRespJson, _ := json.Marshal(clamScannerResponse)
+	info.Println( time.Now().Format(time.RFC3339) + " clamav scan result " + string(clamRespJson))
+
 	if (clamerr == nil) && len(clamScannerResponse.Matches) > 0 {
-		resp, _ := json.Marshal(yaraScannerResponse)
-		info.Println( time.Now().Format(time.RFC3339) + " Found matches with clamav" + string(resp))
+		info.Println( time.Now().Format(time.RFC3339) + " Found matches with clamav" + string(clamRespJson))
 		scanResponse.data = clamScannerResponse
 	} 
 	

@@ -1,97 +1,221 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"context"
+	"net/http"
+	"github.com/aws/smithy-go"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"net/url"
 	"time"
 	"fmt"
 	"os"
+	"strconv"
 	"errors"
 )
 
-// check if a bucket exists.
-func bucketExists(bucket string) (bool, error) {
-	awsSession, _ := session.NewSession(&aws.Config{
-		Region: aws.String(getRegion())},
-	)
 
-	svc := s3.New(awsSession)
-	input := &s3.HeadBucketInput{
-		Bucket: aws.String(bucket),
-	}
+func getPartSize() int64 {
+	var partSize int64
 
-	_, err := svc.HeadBucket(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-				case s3.ErrCodeNoSuchBucket:
-					return false,nil
-				default:
-					elog.Println( time.Now().Format(time.RFC3339) + " bucketExists failed for bucket "+bucket + " error : " + err.Error())
-					return false, errors.New("Filed to find bucket")			
-			}
+	strSizeInMb, err := os.LookupEnv("DOWNLOAD_PART_SIZE")
+	
+	if !err {
+		elog.Println(time.Now().Format(time.RFC3339) + "DOWNLOAD_PART_SIZE is not present..using DefaultDownloadPartSize ")
+		partSize = manager.DefaultDownloadPartSize
+	} else {
+		sizeInMb, err := strconv.Atoi(strSizeInMb)
+		if err != nil {
+			elog.Println(time.Now().Format(time.RFC3339) + "DOWNLOAD_PART_SIZE conversion issue..using DefaultDownloadPartSize ")
+			partSize = manager.DefaultDownloadPartSize
+		} else {
+			partSize = int64(sizeInMb) * 1024 * 1204
 		}
-		elog.Println( time.Now().Format(time.RFC3339) + " bucketExists got unknown error for bucket "+bucket + " error : " + err.Error())
-		return false, errors.New("Filed to find bucket")			
 	}
-
-	return true,nil
+	return partSize
 }
-
-// check if a file exists.
-func keyExists(bucket string, key string) (bool, error) {
-	awsSession, _ := session.NewSession(&aws.Config{
-		Region: aws.String(getRegion())},
-	)
-
-	svc := s3.New(awsSession)
-
-	_, err := svc.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {            
-			case "NotFound": // s3.ErrCodeNoSuchKey does not work, aws is missing this error code so we hardwire a string
-				elog.Println( time.Now().Format(time.RFC3339) + " keyExists got NotFound error for " +key+ " bucket "+bucket + " error : " + err.Error())
-				return false, nil
-			default:
-				elog.Println( time.Now().Format(time.RFC3339) + " keyExists failed for " +key+ " bucket "+bucket + " error : " + err.Error())
-				return false, errors.New("Filed to find file")
-			}
-		}
-		elog.Println( time.Now().Format(time.RFC3339) + " keyExists got unknown error for " +key+ " bucket "+bucket + " error : " + err.Error())
-		return false, errors.New("Filed to find file")
-	}
-	return true, nil
-}
-
 
 func getRegion() string {
 	region, err := os.LookupEnv("AWS_REGION")
 	if !err {
-		fmt.Println("AWS_REGION is not present..using us-east-1")
+		elog.Println(time.Now().Format(time.RFC3339) + "AWS_REGION is not present..using us-east-1")
 		region = "us-east-1"
 	}
 	return region
 }
 
+// check if a bucket exists.
+func bucketExists(bucket string) (bool, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
+	)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " bucketExists: Filed to load config for bucket "+bucket + " error : " + err.Error())
+		return false, errors.New("Filed to load config")			
+	}
+
+	s3client := s3.NewFromConfig(cfg)
+
+	_, err = s3client.HeadBucket(context.TODO(),&s3.HeadBucketInput{Bucket: aws.String(bucket)})
+
+	if err != nil {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {			
+			var httpResponseErr *awshttp.ResponseError
+			if  errors.As(err, &httpResponseErr) {
+				switch httpResponseErr.HTTPStatusCode() {
+				case http.StatusMovedPermanently:
+					elog.Println( time.Now().Format(time.RFC3339) + " bucketExists: failed for bucket "+bucket + " error : " + err.Error())
+					return false, errors.New("Bucket StatusMovedPermanently ")	
+				case http.StatusForbidden:
+					elog.Println( time.Now().Format(time.RFC3339) + " bucketExists: failed for bucket "+bucket + " error : " + err.Error())
+					return false, errors.New("Bucket StatusForbidden")	
+				case http.StatusNotFound:
+					elog.Println( time.Now().Format(time.RFC3339) + " bucketExists: failed for bucket "+bucket + " error : " + err.Error())
+					return false, nil				
+				default:
+					elog.Println(time.Now().Format(time.RFC3339) + " bucketExists: ResponseError failed for bucket "+bucket + "with error: "+err.Error())
+					return false, errors.New("Filed to find bucket")
+				}
+			} else {
+				elog.Println(time.Now().Format(time.RFC3339) + " bucketExists: ApiError failed for bucket "+bucket + "with error: "+err.Error())
+				return false, errors.New("Filed to find bucket")
+			}
+		} else {
+			elog.Println(time.Now().Format(time.RFC3339) + " bucketExists: failed for bucket "+bucket + "with error: "+err.Error())
+			return false, errors.New("Filed to find bucket")
+		}
+	}
+
+	return true,nil
+}
+
+func getHeadObject(bucket string, key string) (*s3.HeadObjectOutput, error) {
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
+	)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " getHeadObject: Filed to load config for bucket "+bucket + " error : " + err.Error())
+		return nil, errors.New("Filed to load config")			
+	}
+
+	s3client := s3.NewFromConfig(cfg)
+
+	headObjectResponse, err := s3client.HeadObject(context.TODO(), &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {			
+			var httpResponseErr *awshttp.ResponseError
+			if  errors.As(err, &httpResponseErr) {
+				switch httpResponseErr.HTTPStatusCode() {
+				case http.StatusMovedPermanently:
+					elog.Println( time.Now().Format(time.RFC3339) + " getHeadObject: failed for bucket "+bucket +" key "+key+" error : " + err.Error())
+					return nil, errors.New("Bucket StatusMovedPermanently ")	
+				case http.StatusForbidden:
+					elog.Println( time.Now().Format(time.RFC3339) + " getHeadObject: failed for bucket "+bucket +" key "+key+" error : " + err.Error())
+					return nil, errors.New("Bucket StatusForbidden")	
+				case http.StatusNotFound:
+					elog.Println( time.Now().Format(time.RFC3339) + " getHeadObject: failed for bucket "+bucket +" key "+key+" error : " + err.Error())
+					return nil, errors.New("Bucket StatusNotFound")					
+				default:
+					elog.Println(time.Now().Format(time.RFC3339) + " getHeadObject: ResponseError failed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+					return nil, errors.New("Filed to find object")
+				}
+			} else {
+				elog.Println(time.Now().Format(time.RFC3339) + " getHeadObject: APIError failed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+				return nil, errors.New("Filed to find object")
+			}
+		} else {
+			elog.Println(time.Now().Format(time.RFC3339) + " getHeadObject: failed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+			return nil, errors.New("Filed to find object")
+		}
+	}
+
+	return headObjectResponse, nil
+}
+
+// check if a file exists.
+func keyExists(bucket string, key string) (bool, error) {
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
+	)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + "keyExists: Filed to load config for bucket "+bucket +" key "+key+" error : " + err.Error())
+		return false, errors.New("Filed to load config")			
+	}
+
+	s3client := s3.NewFromConfig(cfg)
+
+	_, err = s3client.HeadObject(context.TODO(), &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {			
+			var httpResponseErr *awshttp.ResponseError
+			if  errors.As(err, &httpResponseErr) {
+				switch httpResponseErr.HTTPStatusCode() {	
+				case http.StatusNotFound:
+					elog.Println( time.Now().Format(time.RFC3339) + " keyExists: failed for bucket "+bucket +" key "+key+" error : " + err.Error())
+					return false, nil				
+				default:
+					elog.Println(time.Now().Format(time.RFC3339) + " keyExists: ResponseError failed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+					return false, errors.New("Filed to find key")
+				}
+			}  else {
+				elog.Println(time.Now().Format(time.RFC3339) + " keyExists: APIErrorfailed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+				return false, errors.New("Filed to find key")
+			}
+		} else {
+			elog.Println(time.Now().Format(time.RFC3339) + " keyExists: failed for bucket "+bucket +" key "+key+" with error: "+err.Error())
+			return false, errors.New("Filed to find key")
+		}
+	}
+
+	return true, nil
+}
+
 func readFile(bucket string, item string) ([] byte, error) {
 
-	awsSession, _ := session.NewSession(&aws.Config{
-		Region: aws.String(getRegion())},
+	// Load AWS Config
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
 	)
-	
-	buff := &aws.WriteAtBuffer{}
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " readFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())
+		return nil, errors.New("Filed to load config")			
+	}
 
-	s3dl := s3manager.NewDownloader(awsSession)
+	// Create an S3 client using the loaded configuration
+	s3client := s3.NewFromConfig(cfg)
 
-	_, err := s3dl.Download(buff, &s3.GetObjectInput{
+	// Create a downloader with the client and custom downloader options
+	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
+		d.PartSize = getPartSize()
+	})
+
+	headObject, err := getHeadObject(bucket,item)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " readFile: getHeadObject failed " +item+ " from bucket "+bucket + " error : " + err.Error())
+		return nil, errors.New("Filed to read file")			
+	}
+	// pre-allocate in memory buffer, where headObject type is *s3.HeadObjectOutput
+	buff := make([]byte, int(headObject.ContentLength))
+	// wrap with aws.WriteAtBuffer
+	w := manager.NewWriteAtBuffer(buff)
+	// download file into the memory
+	_, err = downloader.Download(context.TODO(), w, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(item),
 	})
@@ -103,34 +227,34 @@ func readFile(bucket string, item string) ([] byte, error) {
 	
 	info.Println(time.Now().Format(time.RFC3339) +" Downloaded file "+item+ " from bucket "+bucket)
 
-	return buff.Bytes(), nil
+	return buff, nil
 }
 
 func copyFile(bucket string, item string, other string) (error){
 
-	awsSession, _ := session.NewSession(&aws.Config{
-		Region: aws.String(getRegion())},
+	// Load AWS Config
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
 	)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " copyFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())
+		return errors.New("Filed to load config")			
+	}
 
-	// Create S3 service client
-	svc := s3.New(awsSession)
+	// Create an S3 client using the loaded configuration
+	s3client := s3.NewFromConfig(cfg)
 
 	source := bucket + "/" + item
 
-	// Copy the file
-	_, err := svc.CopyObject(&s3.CopyObjectInput{Bucket: aws.String(other),
-	CopySource: aws.String(url.PathEscape(source)), Key: aws.String(item),  ACL: aws.String("bucket-owner-full-control")})
+	_, err = s3client.CopyObject(context.TODO(), &s3.CopyObjectInput{
+		Bucket:     aws.String(other),
+		CopySource: aws.String(url.PathEscape(source)),
+		Key:        aws.String(item),
+	})
 
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " Unable to read file " +item+ " from bucket "+bucket+ " to bucket "+other+" error : " + err.Error())
 		return errors.New("Unable to copy file")
-	}
-
-	// Wait to see if the file got copied
-	err = svc.WaitUntilObjectExists(&s3.HeadObjectInput{Bucket: aws.String(other), Key: aws.String(item)})
-	if err != nil {
-		elog.Println( time.Now().Format(time.RFC3339) + " Error occurred while waiting for file " +item+ " to be copied to bucket "+other+ " error: "+ fmt.Sprint(err))
-		return errors.New("Error while  waiting for file to copy")
 	}
 
 	info.Println( time.Now().Format(time.RFC3339) + " File "+ item+ " successfully copied from bucket "+bucket+ " to bucket "+other)
@@ -139,18 +263,24 @@ func copyFile(bucket string, item string, other string) (error){
 }
 
 func deleteFile(bucket string, item string) (error) {
-	awsSession, _ := session.NewSession(&aws.Config{
-		Region: aws.String(getRegion())},
+
+	// Load AWS Config
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(getRegion()),
 	)
+	if err != nil {
+		elog.Println( time.Now().Format(time.RFC3339) + " deleteFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())
+		return errors.New("Filed to load config")			
+	}
 
-	// Create S3 service client
-	svc := s3.New(awsSession)
+	// Create an S3 client using the loaded configuration
+	s3client := s3.NewFromConfig(cfg)
 
-	params := &s3.DeleteObjectInput{
+	_, err = s3client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(item),
-	}
-	_, err := svc.DeleteObject(params)
+	})
+
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " Error occurred while deleting file " +item+ " from bucket "+bucket+" err: "+ fmt.Sprint(err))
 		return errors.New("Error occurred while deleting file")
