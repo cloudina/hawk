@@ -45,7 +45,7 @@ RUN go build -o /go/bin/hawk
 
 RUN git clone https://github.com/Yara-Rules/rules.git /rules
 
-FROM alpine:3.16
+FROM alpine:3.18
 
 # Update
 RUN apk update upgrade
