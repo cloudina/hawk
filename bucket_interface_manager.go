@@ -36,13 +36,13 @@ func validateInputBucket(w http.ResponseWriter, bucket string, bucketInterface B
 		return errors.New("Invalid input bucket")
 	}
 
-	isbucketExists, err := bucketInterface.bucketExists(bucket)
+	bucketExists, err := bucketInterface.bucketExists(bucket)
 
 	if(err != nil) {
 		errorResponse(w,  err.Error(), http.StatusInternalServerError)
 		return err
 	}
-	if (!isbucketExists) {
+	if (!bucketExists) {
 		errorResponse(w,  "Bucket: "+bucket+" does not exists", http.StatusUnprocessableEntity)
 		return errors.New("Bucket: "+bucket+" does not exists")
 	}
