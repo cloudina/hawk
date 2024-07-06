@@ -25,20 +25,22 @@ func ParseCloudProviderString(str string) (CloudProvider, bool) {
     return c, ok
 }
 
-func initialiseBucketInterface(cloud_provider string, interface* BucketInterface ) (){
-	switch cloud_provider {
-		case CloudProviderAWS:
-			interface := S3_Manager()
-		case CloudProviderAzure:
-			interface = ABS_Manager()
-		case CloudProviderGCP:
-			interface = GCP_Manager()
-		default:
-			panic(fmt.Errorf("unwknown cloud_provider: %s", cloud_provider))
-    }
-}
 
 func BucketScanObjectHandler(w http.ResponseWriter, r *http.Request) {
-	ScanObject(bucketInterface, w, r)
+
+	switch cloud_provider {
+		case CloudProviderAWS:
+			s3_Mgr := &S3_Manager{}
+			ScanBucketObject(w,r, s3_Mgr)
+		case CloudProviderAzure:
+			abs_Mgr := &ABS_Manager{}
+			ScanBucketObject(w,r, abs_Mgr)
+		case CloudProviderGCP:
+			gcs_Mgr := &GCS_Manager{}
+			ScanBucketObject(w,r, gcs_Mgr)
+		default:
+			panic(fmt.Errorf("unwknown cloud_provider: %s", cloud_provider))
+	}
+
 }
 

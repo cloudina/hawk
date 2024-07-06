@@ -18,11 +18,11 @@ import (
 )
 
 
-
 type S3_Manager struct {
+	*BucketMgr
 }
 
-func getPartSize() int64 {
+func (self* S3_Manager) getPartSize() int64 {
 	var partSize int64
 
 	strSizeInMb, err := os.LookupEnv("DOWNLOAD_PART_SIZE")
@@ -42,7 +42,7 @@ func getPartSize() int64 {
 	return partSize
 }
 
-func getRegion() string {
+func (self* S3_Manager) getRegion() string {
 	region, err := os.LookupEnv("AWS_REGION")
 	if !err {
 		elog.Println(time.Now().Format(time.RFC3339) + " AWS_REGION is not present..using us-east-1")
@@ -54,7 +54,7 @@ func getRegion() string {
 // check if a bucket exists.
 func (self *S3_Manager ) bucketExists(bucket string) (bool, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " bucketExists: Filed to load config for bucket "+bucket + " error : " + err.Error())
@@ -97,10 +97,10 @@ func (self *S3_Manager ) bucketExists(bucket string) (bool, error) {
 	return true,nil
 }
 
-func getHeadObject(bucket string, key string) (*s3.HeadObjectOutput, error) {
+func (self* S3_Manager) getHeadObject(bucket string, key string) (*s3.HeadObjectOutput, error) {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " getHeadObject: Filed to load config for bucket "+bucket + " error : " + err.Error())
@@ -147,10 +147,10 @@ func getHeadObject(bucket string, key string) (*s3.HeadObjectOutput, error) {
 }
 
 // check if a file exists.
-func keyExists(bucket string, key string) (bool, error) {
+func (self* S3_Manager) keyExists(bucket string, key string) (bool, error) {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + "keyExists: Filed to load config for bucket "+bucket +" key "+key+" error : " + err.Error())
@@ -194,7 +194,7 @@ func (self *S3_Manager ) readFile(bucket string, item string) ([] byte, error) {
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " readFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())
@@ -206,10 +206,10 @@ func (self *S3_Manager ) readFile(bucket string, item string) ([] byte, error) {
 
 	// Create a downloader with the client and custom downloader options
 	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
-		d.PartSize = getPartSize()
+		d.PartSize = self.getPartSize()
 	})
 
-	headObject, err := getHeadObject(bucket,item)
+	headObject, err := self.getHeadObject(bucket,item)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " readFile: getHeadObject failed " +item+ " from bucket "+bucket + " error : " + err.Error())
 		return nil, errors.New("Filed to read file")			
@@ -238,7 +238,7 @@ func (self *S3_Manager ) copyFile(bucket string, item string, other string) (err
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " copyFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())
@@ -270,7 +270,7 @@ func (self *S3_Manager ) deleteFile(bucket string, item string) (error) {
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(getRegion()),
+		config.WithRegion(self.getRegion()),
 	)
 	if err != nil {
 		elog.Println( time.Now().Format(time.RFC3339) + " deleteFile: Filed to load config to read file " +item+ " from bucket "+bucket + " error : " + err.Error())

@@ -21,7 +21,7 @@ var (
 	clamdaddr   string
 	clean_files_bucket string
 	quarantine_files_bucket string
-	bucketInterface *BucketInterface
+	cloud_provider CloudProvider
 	// channels
 	healthcheckrequests chan *HealthCheckRequest
 	scanstreamrequests chan *ScanStreamRequest
@@ -53,9 +53,7 @@ func init() {
 	quarantine_files_bucket = getEnv("QUARANTINE_FILES_BUCKET", "")
 	cloud_provider_str := getEnv("CLOUD_PROVIDER", "")
 
-	cloud_provider, _ := ParseCloudProviderString(cloud_provider_str)
-
-	initialiseBucketInterface(cloud_provider, bucketInterface)
+	cloud_provider, _ = ParseCloudProviderString(cloud_provider_str)
 
 	info.Println("reading CLEAN_FILES_BUCKET value as " +clean_files_bucket)
 	info.Println("reading QUARANTINE_FILES_BUCKET value as " +quarantine_files_bucket)
