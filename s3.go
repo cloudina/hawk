@@ -18,6 +18,10 @@ import (
 )
 
 
+
+type S3_Manager struct {
+}
+
 func getPartSize() int64 {
 	var partSize int64
 
@@ -48,7 +52,7 @@ func getRegion() string {
 }
 
 // check if a bucket exists.
-func bucketExists(bucket string) (bool, error) {
+func (self *S3_Manager ) bucketExists(bucket string) (bool, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(getRegion()),
 	)
@@ -186,7 +190,7 @@ func keyExists(bucket string, key string) (bool, error) {
 	return true, nil
 }
 
-func readFile(bucket string, item string) ([] byte, error) {
+func (self *S3_Manager ) readFile(bucket string, item string) ([] byte, error) {
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
@@ -230,7 +234,7 @@ func readFile(bucket string, item string) ([] byte, error) {
 	return buff, nil
 }
 
-func copyFile(bucket string, item string, other string) (error){
+func (self *S3_Manager ) copyFile(bucket string, item string, other string) (error){
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
@@ -262,7 +266,7 @@ func copyFile(bucket string, item string, other string) (error){
 	return nil
 }
 
-func deleteFile(bucket string, item string) (error) {
+func (self *S3_Manager ) deleteFile(bucket string, item string) (error) {
 
 	// Load AWS Config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),

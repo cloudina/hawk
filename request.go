@@ -1,6 +1,6 @@
 package main
 
-type ScanS3Object struct {
+type ScanObject struct {
 	BucketName string `json:"bucketname"`
 	Key string `json:"key"`
 	CleanFilesBucket string `json:"clean_files_bucket,omitempty"`
