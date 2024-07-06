@@ -21,18 +21,26 @@ Multi Cloud antivirus scanning API based on CLAMAV and YARA for AWS S3, AZURE Bl
 ## API
 Available API are
 ```
-POST /scanstream - scan stream
+# Scan stream
+POST /scanstream -d @file_to_scan
 
-POST -d '{"bucketname": $S3_SCANNING_BUCKET, "key": $S3_OBJECT_TO_SCAN, "clean_files_bucket": $S3_CLEAN_FILES_BUCKET,
- "qurantine_files_bucket": $S3_QUARNTINE_FILES_BUCKET}' /s3/scanfile - scan a file which is in s3 ( in scanning bucket )
+# scan a file which is in s3 ( in scanning bucket )
+POST -d '{"bucketname": $S3_SCANNING_BUCKET, "key": $S3_OBJECT_TO_SCAN, "clean_files_bucket": $S3_CLEAN_FILES_BUCKET, "qurantine_files_bucket": $S3_QUARNTINE_FILES_BUCKET}' /s3/scanfile
 
-GET /ruleset/ - list all loaded ruleset
+# list all loaded ruleset
+GET /ruleset/
 
-GET /ruleset/{ruleset} - list all rules from a loaded rule
+# list all rules from a loaded rule
+GET /ruleset/{ruleset}
 
-GET /metrics - get metrics
-GET /health - get health info 
-GET / - get index
+# get metrics
+GET /metrics
+
+# get health info 
+GET /health
+
+#get index
+GET /
 
 ```
 
