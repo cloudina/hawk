@@ -1,11 +1,11 @@
-FROM golang:1.19-alpine3.16 AS builder
+FROM golang:1.22-alpine3.20 AS builder
 
 RUN apk update upgrade;
 
-ENV YARA 4.2.3
+ENV YARA 4.5.1
 
 # Install Yara
-RUN apk --update add --no-cache openssl file bison jansson ca-certificates
+RUN apk --update add --no-cache openssl file bison jansson ca-certificates zlib
 RUN apk --update add --no-cache  \
   pkgconfig \
   openssl-dev \
@@ -19,15 +19,19 @@ RUN apk --update add --no-cache  \
   flex \
   git \
   gcc \
-  && echo "===> Install Yara from source..." \
-  && cd /tmp \
+  libcrypto3 \
+  libmagic-static \
+  linux-headers \
+  && echo "===> Install Yara from source..." 
+
+RUN cd /tmp \
   && git clone --recursive --branch v${YARA} https://github.com/VirusTotal/yara.git \
   && cd /tmp/yara \
   && ./bootstrap.sh \
   && sync \
   && ./configure --enable-magic \
+  --enable-crypto \
   --enable-cuckoo \
-  --enable-dotnet \
   && make \
   && make install \
   && rm -rf /tmp/* 
@@ -45,7 +49,7 @@ RUN go build -o /go/bin/hawk
 
 RUN git clone https://github.com/Yara-Rules/rules.git /rules
 
-FROM alpine:3.16
+FROM alpine:3.20
 
 # Update
 RUN apk update upgrade

@@ -29,7 +29,7 @@ func getPartSize() int64 {
 	} else {
 		sizeInMb, err := strconv.Atoi(strSizeInMb)
 		if err != nil {
-			elog.Println(time.Now().Format(time.RFC3339) + "DOWNLOAD_PART_SIZE conversion issue..using DefaultDownloadPartSize ")
+			elog.Println(time.Now().Format(time.RFC3339) + " DOWNLOAD_PART_SIZE conversion issue..using DefaultDownloadPartSize ")
 			partSize = manager.DefaultDownloadPartSize
 		} else {
 			partSize = int64(sizeInMb) * 1024 * 1204
@@ -41,7 +41,7 @@ func getPartSize() int64 {
 func getRegion() string {
 	region, err := os.LookupEnv("AWS_REGION")
 	if !err {
-		elog.Println(time.Now().Format(time.RFC3339) + "AWS_REGION is not present..using us-east-1")
+		elog.Println(time.Now().Format(time.RFC3339) + " AWS_REGION is not present..using us-east-1")
 		region = "us-east-1"
 	}
 	return region
@@ -211,7 +211,7 @@ func readFile(bucket string, item string) ([] byte, error) {
 		return nil, errors.New("Filed to read file")			
 	}
 	// pre-allocate in memory buffer, where headObject type is *s3.HeadObjectOutput
-	buff := make([]byte, int(headObject.ContentLength))
+	buff := make([]byte, int(*headObject.ContentLength))
 	// wrap with aws.WriteAtBuffer
 	w := manager.NewWriteAtBuffer(buff)
 	// download file into the memory

@@ -51,6 +51,9 @@ The following image tags are available:
 Run hawk docker image:
 ```bash
 docker run -p 9000:9999 -itd --name hawk cloudina/hawk
+docker run -p 9000:9999 -v $HOME/.aws/credentials:/go/src/app/.aws/credentials:ro -itd --name hawk cloudina/hawk
+
+
 ```
 
 Test that service detects common test virus signature:
