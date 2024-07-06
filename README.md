@@ -52,26 +52,29 @@ Run hawk docker image:
 ```bash
 docker run -p 9000:9999 -itd --name hawk cloudina/hawk
 docker run -p 9000:9999 -v $HOME/.aws/credentials:/go/src/app/.aws/credentials:ro -itd --name hawk cloudina/hawk
-
-
 ```
 
 Test that service detects common test virus signature:
 
-**HTTP**
+**EXAMPLES**
 ```bash
-$  curl --data "@./testsamples/request/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
+# Request - Scanning a file from S3 , ./testsamples/request/s3filescan has config for s3
+curl --data "@./testsamples/request/s3filescan" http://0.0.0.0:9000/s3/scanfile -H 'Content-Type: application/json'
 
-{"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}%                                   
+# Response
+{"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}%                                 
 
-$  curl --data "@./testsamples/scanfiles/eicar" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+# Request - Uploading sample virus file to API
+curl --data "@./testsamples/scanfiles/eicar" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
 
+# Response
 {"filename":"stream","matches":[{"Rule":"Win.Test.EICAR_HDB-1","namespace":"","tags":null}],"status":"INFECTED"}                           
 
-$ curl --data "@./testsamples/scanfiles/hello.txt" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
+# Request - Uploading sample clean file to API
+curl --data "@./testsamples/scanfiles/hello.txt" http://0.0.0.0:9000/scanstream -H 'Content-Type: application/json'
 
+# Response
 {"filename":"stream","matches":[],"status":"CLEAN"} 
-
                                                                                          
 ```
 ## Networking
