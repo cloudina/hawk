@@ -21,6 +21,7 @@ var (
 	clamdaddr   string
 	clean_files_bucket string
 	quarantine_files_bucket string
+	cloud_provider string
 	// channels
 	healthcheckrequests chan *HealthCheckRequest
 	scanstreamrequests chan *ScanStreamRequest
@@ -48,11 +49,14 @@ func init() {
 	//build address string
 	addrport = address + ":" + port
 
-	clean_files_bucket = getEnv("CLEAN_FILES_S3_BUCKET", "")
-	quarantine_files_bucket = getEnv("QUARANTINE_FILES_S3_BUCKET", "")
+	clean_files_bucket = getEnv("CLEAN_FILES_BUCKET", "")
+	quarantine_files_bucket = getEnv("QUARANTINE_FILES_BUCKET", "")
+	cloud_provider = getEnv("CLOUD_PROVIDER", "")
 
-	info.Println("reading CLEAN_FILES_S3_BUCKET value as " +clean_files_bucket)
-	info.Println("reading QUARANTINE_FILES_S3_BUCKET value as " +quarantine_files_bucket)
+	info.Println("reading CLEAN_FILES_BUCKET value as " +clean_files_bucket)
+	info.Println("reading QUARANTINE_FILES_BUCKET value as " +quarantine_files_bucket)
+	info.Println("reading CLOUD_PROVIDER value as " +cloud_provider)
+
 }
 
 func main() {
@@ -100,8 +104,8 @@ func main() {
 	// Prometheus metrics
 	r.Handle("/metrics", promhttp.Handler())
 
-	s3_sub := r.PathPrefix("/s3").Subrouter()
-	s3_sub.HandleFunc("/scanfile", S3ScanFileHandler).Methods("POST")
+	bucket_sub := r.PathPrefix("/bucket").Subrouter()
+	bucket_sub.HandleFunc("/scanobject", BucketScanObjectHandler).Methods("POST")
 	ruleset_sub := r.PathPrefix("/ruleset").Subrouter()
 	ruleset_sub.HandleFunc("", RuleSetListHandler).Methods("GET")
 	ruleset_sub.HandleFunc("/", RuleSetListHandler).Methods("GET")
