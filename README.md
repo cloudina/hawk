@@ -23,7 +23,7 @@ Available API are
 ```
 POST /scanstream - scan stream
 
-POST -d '{"bucketname": $S3_BUCKET "key": $S3_OBJECT }' /s3/scanfile - scan s3 file
+POST -d '{"bucketname": $S3_SCANNING_BUCKET, "key": $S3_OBJECT_TO_SCAN, "clean_files_bucket": $S3_CLEAN_FILES_BUCKET, "qurantine_files_bucket": $S3_QUARNTINE_FILES_BUCKET}' /s3/scanfile - scan a file which is in s3 ( in scanning bucket )
 
 GET /ruleset/ - list all loaded ruleset
 
