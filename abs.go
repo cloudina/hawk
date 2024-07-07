@@ -130,7 +130,7 @@ func (self *ABS_Manager ) copyFile(bucket string, item string, other string) (er
 	
 	client := self.getServiceClient()
 	
-	_, err = client.UploadBuffer(context.TODO(), path.Dir(other),, path.Base(other) data, &azblob.UploadBufferOptions{})
+	_, err = client.UploadBuffer(context.TODO(), path.Dir(other), path.Base(other), data, &azblob.UploadBufferOptions{})
 	handleError(err)
 }
 
