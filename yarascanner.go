@@ -11,7 +11,7 @@ type YaraScanner struct {
 }
 
 // To implement an interface in Go all you need to do is just define all the functions in the interface
-func (self *YaraScanner) Scan(data [] byte) (*ScanReport, error) {
+func (self *YaraScanner) Scan(data []byte) (*ScanReport, error) {
 	var matches []ScanMatch
 	response := new(ScanReport)
 	response.Filename = "stream"
@@ -22,7 +22,7 @@ func (self *YaraScanner) Scan(data [] byte) (*ScanReport, error) {
 		err := ruleset.Rules.ScanMem(data, 0, 300, &m)
 		if err != nil {
 			response.Status = "ERROR"
-			return response,err
+			return response, err
 		}
 		for _, resp := range m {
 			var match ScanMatch
@@ -37,11 +37,11 @@ func (self *YaraScanner) Scan(data [] byte) (*ScanReport, error) {
 		response.Status = "INFECTED"
 	} else {
 		response.Status = "CLEAN"
-		matches = [] ScanMatch{}
+		matches = []ScanMatch{}
 	}
-	
+
 	response.Matches = matches
-	return response,nil
+	return response, nil
 }
 
 func (self *YaraScanner) LoadIndex(indexPath string) error {
@@ -59,7 +59,7 @@ func (self *YaraScanner) ListRuleSets() (*RuleSetResponseObject, error) {
 		response.Names = append(response.Names, ruleset.Name)
 	}
 
-	return response,nil
+	return response, nil
 
 }
 

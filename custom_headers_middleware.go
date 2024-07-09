@@ -27,10 +27,10 @@ func (helmet *SimpleHelmet) Default() {
 
 // Secure function, which will be called for each request
 func (helmet *SimpleHelmet) Secure(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for key, val := range helmet.headers {
-			w.Header().Set(key,val)
+			w.Header().Set(key, val)
 		}
 		next.ServeHTTP(w, r)
-    })
+	})
 }

@@ -1,28 +1,27 @@
 package main
 
 import (
-	"time"
 	"encoding/json"
 	"os"
 	"strconv"
+	"time"
 )
-
 
 // struct to hold compiler and channels
 type Scanner struct {
-	yarascanner YaraScanner
-	clamscanner ClamScanner
+	yarascanner         YaraScanner
+	clamscanner         ClamScanner
 	healthcheckrequests chan *HealthCheckRequest
-	scanstreamrequests chan *ScanStreamRequest
-	namerequests chan *RuleSetRequest
-	rulerequests chan *RuleListRequest
+	scanstreamrequests  chan *ScanStreamRequest
+	namerequests        chan *RuleSetRequest
+	rulerequests        chan *RuleListRequest
 }
 
-func (self *Scanner) healthcheck() (*HealthCheckResponse) {
+func (self *Scanner) healthcheck() *HealthCheckResponse {
 
-	healthCheckResponse := new (HealthCheckResponse)
+	healthCheckResponse := new(HealthCheckResponse)
 	clamDHealth := self.clamscanner.isClamdReady()
-	
+
 	if clamDHealth {
 		healthCheckResponse.health = "OK"
 	} else {
@@ -32,35 +31,35 @@ func (self *Scanner) healthcheck() (*HealthCheckResponse) {
 	return healthCheckResponse
 }
 
-func (self *Scanner) scanstream(data []byte) (*ScanResponse) {
+func (self *Scanner) scanstream(data []byte) *ScanResponse {
 
 	info.Println("Running yarascan")
 
-	scanResponse := new (ScanResponse)
+	scanResponse := new(ScanResponse)
 
-	yaraScannerResponse,yaraerr := ScanStream(&self.yarascanner, data)
+	yaraScannerResponse, yaraerr := ScanStream(&self.yarascanner, data)
 	scanResponse.data = yaraScannerResponse
 	scanResponse.err = yaraerr
-	
+
 	yaraRespJson, _ := json.Marshal(yaraScannerResponse)
-	info.Println( time.Now().Format(time.RFC3339) + " yarascan scan result " + string(yaraRespJson))
+	info.Println(time.Now().Format(time.RFC3339) + " yarascan scan result " + string(yaraRespJson))
 
 	if (yaraerr == nil) && len(yaraScannerResponse.Matches) > 0 {
-		info.Println( time.Now().Format(time.RFC3339) + " Found matches with yara " + string(yaraRespJson))
+		info.Println(time.Now().Format(time.RFC3339) + " Found matches with yara " + string(yaraRespJson))
 	}
 
-	info.Println("Running clamscan on addr: "+ clamdaddr)
+	info.Println("Running clamscan on addr: " + clamdaddr)
 
-	clamScannerResponse,clamerr := ScanStream(&self.clamscanner, data)
+	clamScannerResponse, clamerr := ScanStream(&self.clamscanner, data)
 
 	clamRespJson, _ := json.Marshal(clamScannerResponse)
-	info.Println( time.Now().Format(time.RFC3339) + " clamav scan result " + string(clamRespJson))
+	info.Println(time.Now().Format(time.RFC3339) + " clamav scan result " + string(clamRespJson))
 
 	if (clamerr == nil) && len(clamScannerResponse.Matches) > 0 {
-		info.Println( time.Now().Format(time.RFC3339) + " Found matches with clamav" + string(clamRespJson))
+		info.Println(time.Now().Format(time.RFC3339) + " Found matches with clamav" + string(clamRespJson))
 		scanResponse.data = clamScannerResponse
-	} 
-	
+	}
+
 	if clamerr != nil {
 		scanResponse.err = clamerr
 	}
@@ -75,8 +74,8 @@ func (self *Scanner) warmUp() {
 	var yaraHealth = bool(false)
 	var clamDHealth = bool(false)
 
-	yaraScannerResponse,yaraerr := ScanStream(&self.yarascanner, eicar)
-	
+	yaraScannerResponse, yaraerr := ScanStream(&self.yarascanner, eicar)
+
 	if (yaraerr == nil) && len(yaraScannerResponse.Matches) > 0 {
 		yaraHealth = true
 	}
@@ -86,7 +85,7 @@ func (self *Scanner) warmUp() {
 	if yaraHealth && clamDHealth {
 		info.Println("Warmed Up")
 	} else {
-		info.Println( time.Now().Format(time.RFC3339) + " Warm up failed exiting.. Yara Health" + strconv.FormatBool(yaraHealth) + "ClamD Health" + strconv.FormatBool(clamDHealth))
+		info.Println(time.Now().Format(time.RFC3339) + " Warm up failed exiting.. Yara Health" + strconv.FormatBool(yaraHealth) + "ClamD Health" + strconv.FormatBool(clamDHealth))
 		os.Exit(1)
 	}
 }
@@ -96,17 +95,17 @@ func (self *Scanner) LoadIndex(indexPath string) error {
 }
 
 func (self *Scanner) listRuleSets() *RuleSetResponse {
-	response,err :=  self.yarascanner.ListRuleSets()
-	ruleSetResponse := new (RuleSetResponse)
+	response, err := self.yarascanner.ListRuleSets()
+	ruleSetResponse := new(RuleSetResponse)
 	ruleSetResponse.err = err
 	ruleSetResponse.data = response
 	return ruleSetResponse
 }
 
-func (self *Scanner) listRules(rulesetname string) (*RuleListResponse) {
+func (self *Scanner) listRules(rulesetname string) *RuleListResponse {
 
 	response, err := self.yarascanner.ListRules(rulesetname)
-	ruleListResponse := new (RuleListResponse)
+	ruleListResponse := new(RuleListResponse)
 	ruleListResponse.err = err
 	ruleListResponse.data = response
 

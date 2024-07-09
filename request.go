@@ -1,9 +1,9 @@
 package main
 
 type ScanObject struct {
-	BucketName string `json:"bucketname"`
-	Key string `json:"key"`
-	CleanFilesBucket string `json:"clean_files_bucket,omitempty"`
+	BucketName           string `json:"bucketname"`
+	Key                  string `json:"key"`
+	CleanFilesBucket     string `json:"clean_files_bucket,omitempty"`
 	QurantineFilesBucket string `json:"qurantine_files_bucket,omitempty"`
 }
 
@@ -12,7 +12,7 @@ type HealthCheckRequest struct {
 }
 
 type ScanStreamRequest struct {
-	data         [] byte
+	data         []byte
 	ResponseChan chan *ScanResponse
 }
 

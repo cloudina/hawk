@@ -14,19 +14,19 @@ import (
 
 var (
 	// config options
-	index_files StringArgs
-	address     string
-	port        string
-	addrport    string
-	clamdaddr   string
-	clean_files_bucket string
+	index_files             StringArgs
+	address                 string
+	port                    string
+	addrport                string
+	clamdaddr               string
+	clean_files_bucket      string
 	quarantine_files_bucket string
-	cloud_provider CloudProvider
+	cloud_provider          CloudProvider
 	// channels
 	healthcheckrequests chan *HealthCheckRequest
-	scanstreamrequests chan *ScanStreamRequest
-	namerequests chan *RuleSetRequest
-	rulerequests chan *RuleListRequest
+	scanstreamrequests  chan *ScanStreamRequest
+	namerequests        chan *RuleSetRequest
+	rulerequests        chan *RuleListRequest
 
 	// loggers
 	info *log.Logger
@@ -55,9 +55,9 @@ func init() {
 
 	cloud_provider, _ = ParseCloudProviderString(cloud_provider_str)
 
-	info.Println("reading CLEAN_FILES_BUCKET value as " +clean_files_bucket)
-	info.Println("reading QUARANTINE_FILES_BUCKET value as " +quarantine_files_bucket)
-	info.Println("reading CLOUD_PROVIDER value as " +cloud_provider_str)
+	info.Println("reading CLEAN_FILES_BUCKET value as " + clean_files_bucket)
+	info.Println("reading QUARANTINE_FILES_BUCKET value as " + quarantine_files_bucket)
+	info.Println("reading CLOUD_PROVIDER value as " + cloud_provider_str)
 
 }
 
@@ -112,7 +112,7 @@ func main() {
 	ruleset_sub.HandleFunc("", RuleSetListHandler).Methods("GET")
 	ruleset_sub.HandleFunc("/", RuleSetListHandler).Methods("GET")
 	ruleset_sub.HandleFunc("/{ruleset}", RuleListHandler).Methods("GET")
-	
+
 	loggedRouter := handlers.CombinedLoggingHandler(os.Stdout, r)
 	log.Fatal(http.ListenAndServe(addrport, loggedRouter))
 	//log.Fatal(http.ListenAndServe(addrport, r))

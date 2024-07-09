@@ -4,70 +4,70 @@ type GCS_Manager struct {
 	*BucketMgr
 }
 
-func (self *GCS_Manager ) bucketExists(bucket string) (bool, error) {
+func (self *GCS_Manager) bucketExists(bucket string) (bool, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-			return fmt.Errorf("storage.NewClient: %w", err)
+		return fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
 	bucket := client.Bucket(bucket)
-	exists,err := bucket.Attrs(ctx)
+	exists, err := bucket.Attrs(ctx)
 	if err != nil {
-		log.Fatalf("Message: %v",err)
+		log.Fatalf("Message: %v", err)
 		return false, err
 	} else {
 		return true, nil
 	}
 }
 
-func (self *GCS_Manager ) keyExists(bucket string, key string) (bool, error) {
+func (self *GCS_Manager) keyExists(bucket string, key string) (bool, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-			return fmt.Errorf("storage.NewClient: %w", err)
+		return fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
 	bucket := client.Bucket(bucket)
 	object = bucket.Object(key)
-	exists,err := object.Attrs(ctx)
+	exists, err := object.Attrs(ctx)
 	if err != nil {
-		log.Fatalf("Message: %v",err)
+		log.Fatalf("Message: %v", err)
 		return false, err
 	} else {
 		return true, nil
 	}
 }
 
-func (self *GCS_Manager ) readFile(bucket string, item string) ([] byte, error) {
+func (self *GCS_Manager) readFile(bucket string, item string) ([]byte, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-			return nil, fmt.Errorf("storage.NewClient: %w", err)
+		return nil, fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
 	rc, err := client.Bucket(bucket).Object(item).NewReader(ctx)
 	if err != nil {
-			return nil, fmt.Errorf("Object(%q).NewReader: %w", object, err)
+		return nil, fmt.Errorf("Object(%q).NewReader: %w", object, err)
 	}
 	defer rc.Close()
 
 	data, err := ioutil.ReadAll(rc)
 	if err != nil {
-			return nil, fmt.Errorf("ioutil.ReadAll: %w", err)
+		return nil, fmt.Errorf("ioutil.ReadAll: %w", err)
 	}
 	fmt.Fprintf(w, "Blob %v downloaded.\n", object)
 	return data, nil
 }
 
-func (self *GCS_Manager ) copyFile(srcBucket string, srcObject string, other string) (error) {
+func (self *GCS_Manager) copyFile(srcBucket string, srcObject string, other string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-			return fmt.Errorf("storage.NewClient: %w", err)
+		return fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
@@ -91,17 +91,17 @@ func (self *GCS_Manager ) copyFile(srcBucket string, srcObject string, other str
 	// dst = dst.If(storage.Conditions{GenerationMatch: attrs.Generation})
 
 	if _, err := dst.CopierFrom(src).Run(ctx); err != nil {
-			return fmt.Errorf("Object(%q).CopierFrom(%q).Run: %w", dstObject, srcObject, err)
+		return fmt.Errorf("Object(%q).CopierFrom(%q).Run: %w", dstObject, srcObject, err)
 	}
 	fmt.Fprintf(w, "Blob %v in bucket %v copied to blob %v in bucket %v.\n", srcObject, srcBucket, dstObject, dstBucket)
 	return nil
 }
 
-func (self *GCS_Manager ) deleteFile(bucket string, item string) (error) {
+func (self *GCS_Manager) deleteFile(bucket string, item string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-			return fmt.Errorf("storage.NewClient: %w", err)
+		return fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
@@ -115,12 +115,12 @@ func (self *GCS_Manager ) deleteFile(bucket string, item string) (error) {
 	// if the object's generation number does not match your precondition.
 	attrs, err := o.Attrs(ctx)
 	if err != nil {
-			return fmt.Errorf("object.Attrs: %w", err)
+		return fmt.Errorf("object.Attrs: %w", err)
 	}
 	o = o.If(storage.Conditions{GenerationMatch: attrs.Generation})
 
 	if err := o.Delete(ctx); err != nil {
-			return fmt.Errorf("Object(%q).Delete: %w", item, err)
+		return fmt.Errorf("Object(%q).Delete: %w", item, err)
 	}
 	fmt.Fprintf(w, "Blob %v deleted.\n", item)
 	return nil
