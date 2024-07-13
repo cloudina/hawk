@@ -2,13 +2,13 @@ package main
 
 // Defining an interface
 type ScannerInterface interface {
-	Scan(data [] byte) (*ScanReport, error)
+	Scan(data []byte) (*ScanReport, error)
 }
 
 // struct to handle matches
 type ScanMatch struct {
-	Rule      string `json:"rule"`
-	Namespace string `json:"namespace"`
+	Rule      string   `json:"rule"`
+	Namespace string   `json:"namespace"`
 	Tags      []string `json:"tags"`
 }
 
@@ -17,9 +17,9 @@ type ListResponse struct {
 }
 
 type ScanReport struct {
-	Filename string  `json:"filename"`
+	Filename string      `json:"filename"`
 	Matches  []ScanMatch `json:"matches"`
-	Status string `json:"status"`
+	Status   string      `json:"status"`
 }
 
 type ScanErrorData struct {

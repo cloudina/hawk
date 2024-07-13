@@ -53,7 +53,7 @@ func NewRuleSet(indexpath string) (*RuleSet, error) {
 	filename := fields[len(fields)-1]
 	namespacestr := strings.Split(filename, "_")[0]
 
-	info.Println("NewRuleSet fields: " + strings.Join(fields,","))
+	info.Println("NewRuleSet fields: " + strings.Join(fields, ","))
 	info.Println("NewRuleSet filename: " + filename)
 	info.Println("NewRuleSet namespacestr: " + namespacestr)
 	info.Println("NewRuleSet indexpath: " + indexpath)

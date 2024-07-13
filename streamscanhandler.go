@@ -3,8 +3,8 @@ package main
 import (
 	// standard
 	"encoding/json"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 )
 
 func ScanStreamHandler(w http.ResponseWriter, r *http.Request) {

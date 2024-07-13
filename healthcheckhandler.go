@@ -7,7 +7,7 @@ import (
 )
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	validateContentType(w,r)
+	validateContentType(w, r)
 
 	// send request for scanning
 	newRequest := NewHealthCheckRequest()

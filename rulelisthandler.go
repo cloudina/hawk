@@ -13,12 +13,12 @@ func RuleListHandler(w http.ResponseWriter, r *http.Request) {
 	ruleset := vars["ruleset"]
 
 	req := NewRuleListRequest(ruleset)
-	rulerequests<- req
+	rulerequests <- req
 
 	response := <-req.ResponseChan
 
 	var err error = response.err
-	
+
 	if err != nil {
 		elog.Println(err)
 		errorResponse(w, err.Error(), http.StatusInternalServerError)

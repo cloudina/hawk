@@ -14,18 +14,19 @@ import (
 
 var (
 	// config options
-	index_files StringArgs
-	address     string
-	port        string
-	addrport    string
-	clamdaddr   string
-	clean_files_bucket string
+	index_files             StringArgs
+	address                 string
+	port                    string
+	addrport                string
+	clamdaddr               string
+	clean_files_bucket      string
 	quarantine_files_bucket string
+	cloud_provider          CloudProvider
 	// channels
 	healthcheckrequests chan *HealthCheckRequest
-	scanstreamrequests chan *ScanStreamRequest
-	namerequests chan *RuleSetRequest
-	rulerequests chan *RuleListRequest
+	scanstreamrequests  chan *ScanStreamRequest
+	namerequests        chan *RuleSetRequest
+	rulerequests        chan *RuleListRequest
 
 	// loggers
 	info *log.Logger
@@ -48,11 +49,16 @@ func init() {
 	//build address string
 	addrport = address + ":" + port
 
-	clean_files_bucket = getEnv("CLEAN_FILES_S3_BUCKET", "")
-	quarantine_files_bucket = getEnv("QUARANTINE_FILES_S3_BUCKET", "")
+	clean_files_bucket = getEnv("CLEAN_FILES_BUCKET", "")
+	quarantine_files_bucket = getEnv("QUARANTINE_FILES_BUCKET", "")
+	cloud_provider_str := getEnv("CLOUD_PROVIDER", "")
 
-	info.Println("reading CLEAN_FILES_S3_BUCKET value as " +clean_files_bucket)
-	info.Println("reading QUARANTINE_FILES_S3_BUCKET value as " +quarantine_files_bucket)
+	cloud_provider, _ = ParseCloudProviderString(cloud_provider_str)
+
+	info.Println("reading CLEAN_FILES_BUCKET value as " + clean_files_bucket)
+	info.Println("reading QUARANTINE_FILES_BUCKET value as " + quarantine_files_bucket)
+	info.Println("reading CLOUD_PROVIDER value as " + cloud_provider_str)
+
 }
 
 func main() {
@@ -86,8 +92,6 @@ func main() {
 
 	// setup http server and begin serving traffic
 	r := mux.NewRouter()
-	// helmet := CustomHelmet()
-	// r.Use(helmet.Secure)
 
 	helmet := SimpleHelmet{}
 	helmet.Default()
@@ -100,14 +104,13 @@ func main() {
 	// Prometheus metrics
 	r.Handle("/metrics", promhttp.Handler())
 
-	s3_sub := r.PathPrefix("/s3").Subrouter()
-	s3_sub.HandleFunc("/scanfile", S3ScanFileHandler).Methods("POST")
+	bucket_sub := r.PathPrefix("/bucket").Subrouter()
+	bucket_sub.HandleFunc("/scanobject", BucketScanObjectHandler).Methods("POST")
 	ruleset_sub := r.PathPrefix("/ruleset").Subrouter()
 	ruleset_sub.HandleFunc("", RuleSetListHandler).Methods("GET")
 	ruleset_sub.HandleFunc("/", RuleSetListHandler).Methods("GET")
 	ruleset_sub.HandleFunc("/{ruleset}", RuleListHandler).Methods("GET")
-	
+
 	loggedRouter := handlers.CombinedLoggingHandler(os.Stdout, r)
 	log.Fatal(http.ListenAndServe(addrport, loggedRouter))
-	//log.Fatal(http.ListenAndServe(addrport, r))
 }
