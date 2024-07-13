@@ -1,19 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"io"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
+	"path"
 	"log"
 	"os"
-	"strings"
 )
 
 type ABS_Manager struct {
-	*BucketMgr
+	BucketMgr
 }
 
 func (self *ABS_Manager) handleError(err error) {
@@ -39,12 +41,12 @@ func (self *ABS_Manager) getServiceClient() *azblob.Client {
 	return client
 }
 
-func (self *ABS_Manager) getContainerClient(containerName string) *azblob.Client {
+func (self *ABS_Manager) getContainerClient(containerName string) *container.Client {
 	accountName, ok := os.LookupEnv("AZURE_STORAGE_ACCOUNT_NAME")
 	if !ok {
 		panic("AZURE_STORAGE_ACCOUNT_NAME could not be found")
 	}
-	containerName := "testcontainer"
+
 	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, containerName)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
@@ -55,15 +57,15 @@ func (self *ABS_Manager) getContainerClient(containerName string) *azblob.Client
 	return containerClient
 }
 
-func (self *ABS_Manager) getBlobClient(containerName string, blobName string) *azblob.Client {
+func (self *ABS_Manager) getBlobClient(containerName string, blobName string) *blob.Client {
 	// From the Azure portal, get your Storage account blob service URL endpoint.
 	accountName, accountKey := os.Getenv("AZURE_STORAGE_ACCOUNT_NAME"), os.Getenv("AZURE_STORAGE_ACCOUNT_KEY")
 
 	blobURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", accountName, containerName, blobName)
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-	handleError(err)
+	self.handleError(err)
 	blobClient, err := blob.NewClientWithSharedKeyCredential(blobURL, credential, nil)
-	handleError(err)
+	self.handleError(err)
 	return blobClient
 }
 
@@ -78,10 +80,10 @@ func (self *ABS_Manager) listBuckets() []string {
 	var buckets []string
 
 	for pager.More() {
-		resp, err := pager.NextPage(ctx)
-		handleError(err) // if err is not nil, break the loop.
+		resp, err := pager.NextPage(context.TODO())
+		self.handleError(err) // if err is not nil, break the loop.
 		for _, _container := range resp.ContainerItems {
-			buckets.append(_container)
+			buckets = append(buckets, *_container.Name)
 		}
 	}
 	return buckets
@@ -89,8 +91,9 @@ func (self *ABS_Manager) listBuckets() []string {
 
 func (self *ABS_Manager) bucketExists(bucket string) (bool, error) {
 	client := self.getContainerClient(bucket)
-	_, err := client.getProperies()
-	if ContainerNotFound == err {
+	_, err := client.GetProperties(context.TODO(), nil)
+
+	if bloberror.HasCode(err, bloberror.ContainerNotFound) {
 		return false, err
 	} else {
 		return true, nil
@@ -99,8 +102,9 @@ func (self *ABS_Manager) bucketExists(bucket string) (bool, error) {
 
 func (self *ABS_Manager) keyExists(bucket string, key string) (bool, error) {
 	client := self.getBlobClient(bucket, key)
-	_, err := client.getProperies()
-	if BlobNotFound == err {
+	_, err := client.GetProperties(context.TODO(), nil)
+	
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, err
 	} else {
 		return true, nil
@@ -111,33 +115,35 @@ func (self *ABS_Manager) readFile(bucket string, item string) ([]byte, error) {
 
 	client := self.getServiceClient()
 	// Download the blob
-	downloadResponse, err := client.DownloadStream(ctx, bucket, item, nil)
-	handleError(err)
+	downloadResponse, err := client.DownloadStream(context.TODO(), bucket, item, nil)
+	self.handleError(err)
 
-	// Assert that the content is correct
-	actualBlobData, err := io.ReadAll(downloadResponse.Body)
-	handleError(err)
-	err = reader.Close()
-	if err != nil {
-		return nil, err
-	}
-	return actualBlobData, nil
+	downloadedData := bytes.Buffer{}
+	retryReader := downloadResponse.NewRetryReader(context.TODO(), &azblob.RetryReaderOptions{})
+	_, err = downloadedData.ReadFrom(retryReader)
+	self.handleError(err)
+
+	err = retryReader.Close()
+	self.handleError(err)
+
+	return downloadedData.Bytes(), nil
 }
 
 func (self *ABS_Manager) copyFile(bucket string, item string, other string) error {
 
-	data, _ = self.readFile(bucket, item)
+	data, _ := self.readFile(bucket, item)
 
 	client := self.getServiceClient()
 
-	_, err = client.UploadBuffer(context.TODO(), path.Dir(other), path.Base(other), data, &azblob.UploadBufferOptions{})
-	handleError(err)
+	_, err := client.UploadBuffer(context.TODO(), path.Dir(other), path.Base(other), data, &azblob.UploadBufferOptions{})
+	self.handleError(err)
+	return err
 }
 
 func (self *ABS_Manager) deleteFile(bucket string, item string) error {
 	client := self.getServiceClient()
 	// Delete the blob.
-	_, err = client.DeleteBlob(context.TODO(), bucket, item, nil)
-	handleError(err)
+	_, err := client.DeleteBlob(context.TODO(), bucket, item, nil)
+	self.handleError(err)
 	return err
 }

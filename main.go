@@ -92,8 +92,6 @@ func main() {
 
 	// setup http server and begin serving traffic
 	r := mux.NewRouter()
-	// helmet := CustomHelmet()
-	// r.Use(helmet.Secure)
 
 	helmet := SimpleHelmet{}
 	helmet.Default()
@@ -115,5 +113,4 @@ func main() {
 
 	loggedRouter := handlers.CombinedLoggingHandler(os.Stdout, r)
 	log.Fatal(http.ListenAndServe(addrport, loggedRouter))
-	//log.Fatal(http.ListenAndServe(addrport, r))
 }
